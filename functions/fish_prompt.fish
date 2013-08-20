@@ -1,32 +1,30 @@
 function fish_prompt
-	echo -n (set_color -o)(whoami)'@'(hostname | cut -d . -f 1) (set_color -o $fish_color_cwd)(prompt_pwd)
+  set -l cyan (set_color cyan)
+  set -l yellow (set_color yellow)
+  set -l red (set_color -o red)
+  set -l blue (set_color blue)
+  set -l magenta (set_color -o magenta)
+  set -l normal (set_color normal)
 
-	if git branch >&- ^&-
-		set -l branch (git branch --color=never ^&- | awk '/*/ {print $2}')
-		set -l changes (git status --porcelain ^&-)
+  set -l arrow "$red➜"
+  set -l cwd $cyan(basename (prompt_pwd))
 
-		if [ -z "$changes" ]
-			echo -n ' '(set_color -o $fish_color_git_clean)$branch
-		else
-			set -l unstaged "n"
-			set -l staged   "n"
+  if [ (_git_branch_name) ]
+    set -l git_branch $red(_git_branch_name)
+    set git_info "$blue git:($git_branch$blue)"
 
-			for c in $changes
-				echo "$c" | grep -q '^.[^ ] ' ^&-; and set unstaged "y"
-				echo "$c" | grep -q '^[^ ?]. ' ^&-; and set staged   "y"
-			end
+    set -l with_unpushed (_git_branch_name)
 
-			[ $unstaged = y ]
-				and echo -n ' '(set_color -o $fish_color_git_unstaged)$branch
-				or  echo -n ' '(set_color -o $fish_color_git_staged  )$branch
+    if [ (_is_git_dirty) ]
+      set arrow "$red✗"
+    end
 
-			[ $staged = y ]
-				and echo -n '*'
-		end
-	end
+    if [ (_unpushed) ]
+      set git_info "$git_info$normal with$magenta unpushed"
+    end
+  end
 
-	set_color normal
-	[ $USER = root ]
-		and echo -n '# '
-		or  echo -n '$ '
+  echo \n
+  echo -n (rvm_prompt) $cwd $git_info
+  echo \n $arrow $normal
 end
